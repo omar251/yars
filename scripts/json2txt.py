@@ -3,9 +3,9 @@ import re
 import os
 
 # Load the JSON data
-with open('tech_data.json', 'r', encoding='utf-8') as f:
+with open('data.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
-
+print(data)
 # Function to sanitize filenames
 def sanitize_filename(filename):
     # Remove invalid characters for filenames
@@ -27,7 +27,7 @@ for item in data:
     with open(filename, 'w', encoding='utf-8') as txt_file:
         # Write the title
         txt_file.write(f"Title: {item['title']}\n\n")
-
+        print(f"Writing thread to {filename}")
         # Write the body
         txt_file.write(f"Body: {item['body']}\n\n")
 

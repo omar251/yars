@@ -1,6 +1,7 @@
+import re
 import json
 import psycopg2
-from psycopg2 import sql, OperationalError
+from psycopg2 import OperationalError
 
 # Function to create a database connection
 def create_connection(db_name, db_user, db_password, db_host, db_port):
@@ -36,7 +37,8 @@ def create_tables(connection):
             thumbnail_url TEXT,
             selftext TEXT,
             body TEXT,
-            scraped_at TIMESTAMP
+            scraped_at TIMESTAMP,
+            subreddit TEXT
         )
         """,
         """
@@ -59,10 +61,18 @@ def create_tables(connection):
     except OperationalError as e:
         print(f"The error '{e}' occurred")
 
+# Function to extract subreddit name from permalink
+def extract_subreddit(permalink):
+    match = re.search(r"/r/([^/]+)/", permalink)
+    return match.group(1) if match else None
+
 # Function to insert a post and its comments
 def insert_post(connection, post):
     try:
         cursor = connection.cursor()
+
+        # Extract subreddit name from permalink
+        subreddit = extract_subreddit(post['permalink'])
 
         # Check if post already exists
         cursor.execute("SELECT id FROM posts WHERE permalink = %s", (post['permalink'],))
@@ -71,8 +81,8 @@ def insert_post(connection, post):
         if post_id is None:
             # Insert post
             cursor.execute("""
-            INSERT INTO posts (title, author, created_utc, num_comments, score, upvote_ratio, permalink, url, image_url, thumbnail_url, selftext, body, scraped_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO posts (title, author, created_utc, num_comments, score, upvote_ratio, permalink, url, image_url, thumbnail_url, selftext, body, scraped_at, subreddit)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """, (
                 post['title'],
@@ -87,7 +97,8 @@ def insert_post(connection, post):
                 post.get('thumbnail_url', ''),
                 post.get('selftext', ''),
                 post.get('body', ''),
-                post['scraped_at']
+                post['scraped_at'],
+                subreddit
             ))
 
             post_id = cursor.fetchone()[0]

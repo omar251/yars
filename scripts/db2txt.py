@@ -25,11 +25,11 @@ def fetch_posts_with_comments(connection):
     try:
         with connection.cursor() as cursor:
             # Fetch posts
-            cursor.execute("SELECT id, title, body FROM posts")
+            cursor.execute("SELECT id, title, body, permalink FROM posts")
             posts_data = cursor.fetchall()
 
             for post in posts_data:
-                post_id, title, body = post
+                post_id, title, body, permalink = post
                 # Fetch comments for each post
                 cursor.execute("""
                     SELECT body
@@ -38,10 +38,15 @@ def fetch_posts_with_comments(connection):
                     ORDER BY id
                 """, (post_id,))
                 comments = cursor.fetchall()
-                posts.append((title, body, comments))
+                posts.append((title, body, comments, permalink))
     except OperationalError as e:
         print(f"The error '{e}' occurred")
     return posts
+
+# Function to extract subreddit name from permalink
+def extract_subreddit(permalink):
+    match = re.search(r"/r/([^/]+)/", permalink)
+    return match.group(1) if match else "unknown_subreddit"
 
 # Function to sanitize the title for use as a filename
 def sanitize_filename(title):
@@ -56,10 +61,16 @@ def write_posts_to_files(posts, output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    for title, body, comments in posts:
+    for title, body, comments, permalink in posts:
+        subreddit = extract_subreddit(permalink)
+        subreddit_dir = os.path.join(output_dir, subreddit)
+
+        if not os.path.exists(subreddit_dir):
+            os.makedirs(subreddit_dir)
+
         # Sanitize the title to create a valid filename
         sanitized_title = sanitize_filename(title)
-        file_path = os.path.join(output_dir, f"{sanitized_title}.txt")
+        file_path = os.path.join(subreddit_dir, f"{sanitized_title}.txt")
 
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(f"Title: {title}\n\n")

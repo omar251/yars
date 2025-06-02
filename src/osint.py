@@ -12,7 +12,9 @@ class RedditUserAnalyzer:
         user_data = self.miner.scrape_user_data(username, limit)
         for item in user_data:
             if item['type'] == 'comment':
-                self.data.append(f"{item['subreddit']} > {item['body'].replace('\n', ' <line gap> ')}")
+                # Precompute the replaced string to avoid f-string backslash issues
+                cleaned_body = item['body'].replace('\n', ' <line gap> ')
+                self.data.append(f"{item['subreddit']} > {cleaned_body}")
 
     def generate_ai_prompt(self):
         prompt_template = {
@@ -46,4 +48,4 @@ if __name__ == "__main__":
     analyzer = RedditUserAnalyzer()
     analyzer.scrape_user_data("Global_Test_3950")
     ai_response = analyzer.analyze_user()
-    print(ai_response)
+    print(ai_response['message'])
