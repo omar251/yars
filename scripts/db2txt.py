@@ -56,6 +56,12 @@ def sanitize_filename(title):
     sanitized = sanitized.replace(' ', '_')
     return sanitized
 
+# Function to truncate the filename if it's too long
+def truncate_filename(filename, max_length=50):
+    if len(filename) > max_length:
+        return filename[:max_length]
+    return filename
+
 # Function to write posts and comments to text files
 def write_posts_to_files(posts, output_dir):
     if not os.path.exists(output_dir):
@@ -70,7 +76,8 @@ def write_posts_to_files(posts, output_dir):
 
         # Sanitize the title to create a valid filename
         sanitized_title = sanitize_filename(title)
-        file_path = os.path.join(subreddit_dir, f"{sanitized_title}.txt")
+        truncated_title = truncate_filename(sanitized_title)
+        file_path = os.path.join(subreddit_dir, f"{truncated_title}.txt")
 
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(f"Title: {title}\n\n")
